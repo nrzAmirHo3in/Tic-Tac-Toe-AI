@@ -9,13 +9,24 @@ class MinimaxTicTacToe {
     constructor(state) {
         this.#STATE = state;
     }
+    // Method to get the best move using Minimax
     getMove() {
-        const initialSuccessors = this.#getSuccessors(this.#STATE, 1);
-        var depthes = [];
-        initialSuccessors.forEach(successor => {
-            depthes.push(this.#getSuccessors(successor, 2));
-        });
+        const initialSuccessors = this.#getSuccessors(this.#STATE, this.#X);
+        let bestScore = -Infinity;
+        let bestMove;
+
+        for (let successor of initialSuccessors) {
+            const score = this.#minimax(successor, this.#O, this.#DEPTH, -Infinity, Infinity);
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = successor;
+            }
+        }
+        // Return the best move
+        return bestMove;
     }
+
+    // Method to generate all possible successors of a given state
     #getSuccessors(state, turn) {
         var successors = [];
         state.forEach((row, i) => {
@@ -29,15 +40,76 @@ class MinimaxTicTacToe {
         });
         return successors;
     }
+    // Minimax algorithm
+    #minimax(state, turn, depth, alpha, beta) {
+        const winner = this.#checkWinner(state);
+        if (winner === this.#X) {
+            return 10 - depth; // X wins, higher score for quicker win
+        } else if (winner === this.#O) {
+            return depth - 10; // O wins, lower score for quicker win
+        } else if (this.#isBoardFull(state)) {
+            return 0; // Draw, neutral score
+        }
+
+        if (turn === this.#X) {
+            let bestScore = -Infinity;
+            for (let successor of this.#getSuccessors(state, turn)) {
+                const score = this.#minimax(successor, this.#O, depth + 1, alpha, beta);
+                bestScore = Math.max(bestScore, score);
+                alpha = Math.max(alpha, bestScore);
+                if (beta <= alpha) break; // Beta cut-off
+            }
+            return bestScore;
+        } else {
+            let bestScore = Infinity;
+            for (let successor of this.#getSuccessors(state, turn)) {
+                const score = this.#minimax(successor, this.#X, depth + 1, alpha, beta);
+                bestScore = Math.min(bestScore, score);
+                beta = Math.min(beta, bestScore);
+                if (beta <= alpha) break; // Alpha cut-off
+            }
+            return bestScore;
+        }
+    }
+
+    // Method to check if there is a winner
+    #checkWinner(state) {
+        // Check rows
+        for (let row of state) {
+            if (row[0] === row[1] && row[1] === row[2] && row[0] !== 0) {
+                return row[0];
+            }
+        }
+
+        // Check columns
+        for (let col = 0; col < 3; col++) {
+            if (state[0][col] === state[1][col] && state[1][col] === state[2][col] && state[0][col] !== 0) {
+                return state[0][col];
+            }
+        }
+
+        // Check diagonals
+        if (state[0][0] === state[1][1] && state[1][1] === state[2][2] && state[0][0] !== 0) {
+            return state[0][0];
+        }
+        if (state[0][2] === state[1][1] && state[1][1] === state[2][0] && state[0][2] !== 0) {
+            return state[0][2];
+        }
+
+        return null; // No winner
+    }
+
+    // Method to check if the board is full
+    #isBoardFull(state) {
+        for (let row of state) {
+            for (let cell of row) {
+                if (cell === 0) return false;
+            }
+        }
+        return true;
+    }
 }
 
-const minimaxTTT = new MinimaxTicTacToe([
-    [0, 0, 0],
-    [0, 0, 0],
-    [0, 0, 0],
-]);
-
-const bestMove = minimaxTTT.getMove();
 
 class TicTacToe {
     #oLine1 = '   OOO   ';
@@ -206,10 +278,12 @@ class TicTacToe {
     play() {
         this.print(); // Print the current game state
 
-        // if (this.#turn == 'x') {
-        //     console.log('AI is thinking...!');
-
-        // } else
+        if (this.#turn == 'x') {
+            console.log('AI is thinking...!');
+            const minimaxTTT = new MinimaxTicTacToe(this.#state);
+            const bestMove = minimaxTTT.getMove();
+            this.setState(bestMove);
+        } else
             while (true) {
                 const selectedPos = Number(prompt(`Enter a number 1-9 (player ${this.#turn}): `)) - 1;
                 const posis1 = {
@@ -232,7 +306,7 @@ class TicTacToe {
 
         // Switch turns
         this.#turn = this.#turn === 'x' ? 'o' : 'x';
-        
+
 
         // Check for winner
         if (this.#checkWinner()) {
@@ -244,8 +318,8 @@ class TicTacToe {
             if (emptyCells > 0) {
                 this.play(); // Continue the game if there are empty cells
             } else {
-            this.print(); // Print updated game state
-            console.log("Game finished...! It's a draw.");
+                this.print(); // Print updated game state
+                console.log("Game finished...! It's a draw.");
             }
         }
     }
